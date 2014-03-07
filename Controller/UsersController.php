@@ -75,6 +75,53 @@ class UsersController extends UsersAppController
         }
     }
 
+    public function login() {
+        // Dispatch the event before everything.
+        $Event = new CakeEvent(
+            'Users.Controller.Users.beforeLogin',
+            $this,
+            array('data' => $this->request->data)
+        );
+
+        $this->getEventManager()->dispatch($Event);
+
+        if ($Event->isStopped()) {
+            return;
+        }
+
+        if ($this->request->is('post')) {
+
+            if ($this->Auth->login()) {
+                $Event = new CakeEvent(
+                    'Users.Controller.Users.afterLogin',
+                    $this,
+                    array(
+                        'data' => $this->request->data,
+                        'isFirstLogin' => !$this->Auth->user('last_login')
+                    )
+                );
+                $this->getEventManager()->dispatch($Event);
+
+                $this->{$this->modelClass}->id = $this->Auth->user('id');
+                $this->{$this->modelClass}->saveField('last_login', date('Y-m-d H:i:s'));
+
+                if ($this->here == $this->Auth->loginRedirect) {
+                    $this->Auth->loginRedirect = '/';
+                }
+                $this->Session->setFlash(
+                    sprintf(__d('users', '%s you have successfully logged in'), $this->Auth->user('username'))
+                );
+
+            } else {
+                $this->Session->setFlash(__d('users', "We couldn't identify you. Please, try again."), 'alert', array(
+                    'plugin' => 'BoostCake',
+                    'class' => 'alert-warning'
+                ));
+            }
+        }
+    }
+
+
     /**
      * edit method
      *
@@ -103,6 +150,7 @@ class UsersController extends UsersAppController
         } else {
             $options = array('conditions' => array('User.' . $this->User->primaryKey => $id));
             $this->request->data = $this->User->find('first', $options);
+            unset($this->request->data['User']['password']);
         }
     }
 
@@ -142,11 +190,8 @@ class UsersController extends UsersAppController
      */
     public function admin_index()
     {
-        $this->DataTable->paginate = array('User');
-        // $this->User->recursive = 0;
-        // $this->set('users', $this->Paginator->paginate());
-        $users = $this->User->find('all');
-        $this->set('users', $users);
+        $this->User->recursive = 0;
+        $this->set('users', $this->Paginator->paginate());
     }
 
     /**
@@ -217,6 +262,7 @@ class UsersController extends UsersAppController
         } else {
             $options = array('conditions' => array('User.' . $this->User->primaryKey => $id));
             $this->request->data = $this->User->find('first', $options);
+            unset($this->request->data['User']['password']);
         }
     }
 
