@@ -19,8 +19,57 @@ class UsersController extends UsersAppController
     public $components = array(
         'Session',
         'Paginator',
-        'RequestHandler'
+        'RequestHandler',
+        'Auth' => array(
+            'loginAction'    => array(
+                'plugin' => 'Users',
+                'controller' => 'Users',
+                'action'     => 'login'
+            ),
+            'loginRedirect'  => array(
+                'plugin'     => 'Users',
+                'controller' => 'Users',
+                'action'     => 'index'
+            ),
+            'logoutRedirect' => array(
+                'plugin'       => false,
+                'solutionscms' => false,
+                'controller'   => 'pages',
+                'action'       => 'display',
+                'home'
+            ),
+            'authError'      => 'Você não tem permissão para acessar esta página!',
+            'authenticate'   => array(
+                'Form' => array(
+                    'userModel' => 'User',
+                    'fields' => array(
+                        'username' => 'email'
+                    )
+                ),
+            ),
+            'flash' => array(
+                'params' => array(
+                    'class'  => 'alert alert-warning'
+                ),
+                'key' => 'auth',
+                'element' => 'default'
+            )
+        ),
     );
+
+    public $uses = ['Users.User', 'Users.Address'];
+
+    public function beforeRender() {
+        parent::beforeRender();
+    }
+
+    public function beforeFilter() {
+        parent::beforeFilter();
+        $this->set($this->User->enumValues());
+        $this->Auth->deny();
+        $this->Auth->allow('login');
+        $this->Auth->allow('add');
+    }
 
     /**
      * index method
@@ -29,10 +78,11 @@ class UsersController extends UsersAppController
      */
     public function index()
     {
-        // $this->User->recursive = 0;
-        // $this->set('users', $this->Paginator->paginate());
-        $users = $this->User->find('all');
-        $this->set('users', $users);
+        $user = $this->User->findById($this->Auth->user('id'));
+        unset($user['User']['password']);
+
+        $this->request->data = $user;
+        $this->set(compact('user'));
     }
 
     /**
@@ -60,14 +110,33 @@ class UsersController extends UsersAppController
     {
         if ($this->request->is('post')) {
             $this->User->create();
-            if ($this->User->save($this->request->data)) {
-                $this->Session->setFlash(__d('admin', 'The user has been saved successfully.'), 'alert', array(
-                    'plugin' => 'BoostCake',
-                    'class' => 'alert-success'
-                ));
-                return $this->redirect(array('action' => 'index'));
+
+            $data = $this->request->data;
+            $this->User->set($data);
+
+            $this->set('invalidFields', $this->User->invalidFields());
+
+            if ($this->User->save($data)) {
+
+                $this->Address->create();
+
+                $data['Address']['user_id'] = $this->User->getInsertID();
+
+                if ($this->Address->save($data)) {
+                    $this->Auth->login($data['User']);
+                    $this->Session->setFlash(__('The user has been saved successfully and now you\'re logged in.'), 'alert', array(
+                        'plugin' => 'BoostCake',
+                        'class' => 'alert-success'
+                    ));
+                    $this->redirect($this->Auth->redirectUrl());
+                } else {
+                    $this->Session->setFlash(__('The address could not be saved. Please, try again.'), 'alert', array(
+                        'plugin' => 'BoostCake',
+                        'class' => 'alert-danger'
+                    ));
+                }
             } else {
-                $this->Session->setFlash(__d('admin', 'The user could not be saved. Please, try again.'), 'alert', array(
+                $this->Session->setFlash(__('The user could not be saved. Please, try again.'), 'alert', array(
                     'plugin' => 'BoostCake',
                     'class' => 'alert-danger'
                 ));
@@ -91,6 +160,10 @@ class UsersController extends UsersAppController
 
         if ($this->request->is('post')) {
 
+            if (strpos($this->request->data['User']['username'], '@') !== false) {
+                // $this->Auth->authenticate['Form']['fields']['username'] = 'email';
+            }
+
             if ($this->Auth->login()) {
                 $Event = new CakeEvent(
                     'Users.Controller.Users.afterLogin',
@@ -109,10 +182,12 @@ class UsersController extends UsersAppController
                     $this->Auth->loginRedirect = '/';
                 }
                 $this->Session->setFlash(
-                    sprintf(__d('users', '%s you have successfully logged in'), $this->Auth->user('username'))
+                    sprintf(__d('users', '%s you have successfully logged in'), $this->Auth->user('first_name'))
                 );
+                $this->redirect('/users');
 
             } else {
+                var_dump($this->User->getLastQueries()); die;
                 $this->Session->setFlash(__d('users', "We couldn't identify you. Please, try again."), 'alert', array(
                     'plugin' => 'BoostCake',
                     'class' => 'alert-warning'
@@ -121,6 +196,23 @@ class UsersController extends UsersAppController
         }
     }
 
+    /**
+     * Common logout action
+     *
+     * @return void
+     */
+    public function logout() {
+        $user = $this->Auth->user();
+        $this->Session->destroy();
+        /*if (isset($_COOKIE[$this->Cookie->name])) {
+            $this->Cookie->destroy();
+        }*/
+        //$this->RememberMe->destroyCookie();
+        $this->Session->setFlash(
+            sprintf(__d('users', '%s you have successfully logged out'), $user[$this->{$this->modelClass}->displayField])
+        );
+        $this->redirect($this->Auth->logout());
+    }
 
     /**
      * edit method
