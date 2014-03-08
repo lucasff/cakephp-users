@@ -11,6 +11,11 @@ App::uses('SimplePasswordHasher', 'Controller/Component/Auth');
 class User extends UsersAppModel
 {
 
+    public $actsAs = array(
+        'Admin.Enum' => array(
+            'gender'   => array('M' => 'Masculino', 'F' => 'Feminino'),
+        )
+    );
 
     public $virtualFields = array(
         'full_name' => 'CONCAT(User.first_name, " ", User.last_name)'
@@ -26,5 +31,16 @@ class User extends UsersAppModel
         }
         return true;
     }
+
+    public $hasMany = array(
+        'Address' => array(
+            'className' => 'Address',
+            'foreignKey' => 'user_id',
+            'limit' => '',
+            'order' => '',
+            'finderQuery' => '',
+            'dependent' => true
+        )
+    );
 
 }
