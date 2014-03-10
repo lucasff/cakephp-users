@@ -1,3 +1,5 @@
+[![Latest Stable Version](https://poser.pugx.org/lucasff/cakephp-users/v/stable.png)](https://packagist.org/packages/lucasff/cakephp-users) [![Total Downloads](https://poser.pugx.org/lucasff/cakephp-users/downloads.png)](https://packagist.org/packages/lucasff/cakephp-users) [![Latest Unstable Version](https://poser.pugx.org/lucasff/cakephp-users/v/unstable.png)](https://packagist.org/packages/lucasff/cakephp-users) [![License](https://poser.pugx.org/lucasff/cakephp-users/license.png)](https://packagist.org/packages/lucasff/cakephp-users)
+
 CakePHP Users Plugin
 =============
 
