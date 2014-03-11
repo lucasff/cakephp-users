@@ -5,48 +5,48 @@ $routeName = strtolower(Configure::read('Admin.routingName'));
 $pluginName = Configure::read('Admin.pluginName');
 
 Router::connect(
-    "/Users/login",
+    "/users/login",
     array(
-        'plugin' => 'Users',
-        'controller' => 'Users',
+        'plugin' => 'users',
+        'controller' => 'users',
         'action' => 'login'
     )
 );
 Router::connect(
-    "/Users/:action/*",
+    "/users/:action/*",
     array(
-        'plugin' => 'Users',
-        'controller' => 'Users',
+        'plugin' => 'users',
+        'controller' => 'users',
         'action' => 'index'
     )
 );
 Router::promote();
 Router::connect(
-    "/Users/:action",
+    "/users/:action",
     array(
-        'plugin' => 'Users',
-        'controller' => 'Users',
+        'plugin' => 'users',
+        'controller' => 'users',
     )
 );
 Router::promote();
 Router::connect(
-    "/{$routeName}/Users/:action/*",
+    "/{$routeName}/users/:action/*",
     array(
         $routePrefix => true,
-        'plugin' => 'Users',
+        'plugin' => 'users',
         'prefix' => $routePrefix,
-        'controller' => 'Users',
+        'controller' => 'users',
         'action' => 'index'
     )
 );
 Router::promote();
 Router::connect(
-    "/{$routeName}/Users",
+    "/{$routeName}/users",
     array(
         $routePrefix => true,
-        'plugin' => 'Users',
+        'plugin' => 'users',
         'prefix' => $routePrefix,
-        'controller' => 'Users',
+        'controller' => 'users',
         'action' => 'index'
     )
 );
