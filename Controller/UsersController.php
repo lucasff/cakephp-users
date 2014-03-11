@@ -22,13 +22,13 @@ class UsersController extends UsersAppController
         'RequestHandler',
         'Auth' => array(
             'loginAction'    => array(
-                'plugin' => 'Users',
-                'controller' => 'Users',
+                'plugin'     => 'users',
+                'controller' => 'users',
                 'action'     => 'login'
             ),
             'loginRedirect'  => array(
-                'plugin'     => 'Users',
-                'controller' => 'Users',
+                'plugin'     => 'users',
+                'controller' => 'users',
                 'action'     => 'index'
             ),
             'logoutRedirect' => array(
@@ -65,10 +65,11 @@ class UsersController extends UsersAppController
 
     public function beforeFilter() {
         parent::beforeFilter();
-        $this->set($this->User->enumValues());
+        // $this->set($this->User->enumValues());
         $this->Auth->deny();
         $this->Auth->allow('login');
         $this->Auth->allow('add');
+        $this->Auth->allow('letmein');
     }
 
     /**
@@ -145,6 +146,9 @@ class UsersController extends UsersAppController
     }
 
     public function login() {
+
+	    $this->layout = $this->plugin . '.login';
+
         // Dispatch the event before everything.
         $Event = new CakeEvent(
             'Users.Controller.Users.beforeLogin',
@@ -187,7 +191,6 @@ class UsersController extends UsersAppController
                 $this->redirect('/users');
 
             } else {
-                var_dump($this->User->getLastQueries()); die;
                 $this->Session->setFlash(__d('users', "We couldn't identify you. Please, try again."), 'alert', array(
                     'plugin' => 'BoostCake',
                     'class' => 'alert-warning'
@@ -195,6 +198,41 @@ class UsersController extends UsersAppController
             }
         }
     }
+
+    public function letmein() {
+
+        $username = array_merge(range('a', 'z'), range('A', 'Z'));
+        shuffle($username);
+        $username = substr(implode($username), 0, 8);
+
+        $password = uniqid();
+
+        $this->User->create();
+        $data['User'] = [
+            'id' => null,
+            'name' => 'Auto Generated User',
+            'username' => $username,
+            'password' => $password,
+            'email' => vsprintf('system%s@software.com', mt_rand())
+        ];
+
+        if ($this->User->save($data)) {
+            $data['User']['id'] = $this->User->getInsertID();
+            $this->Auth->login($data);
+            $this->Session->setFlash(
+                __d('admin', 'The User %s has been created with the following password %s', $username, $password),
+                'alert', array(
+                    'plugin' => 'BoostCake',
+                    'class'  => 'alert-warning'
+                )
+            );
+            $this->redirect(array('action' => 'index'));
+        } else {
+            throw new RuntimeException('The Let Me In function has been already used.');
+        }
+
+    }
+
 
     /**
      * Common logout action
